@@ -1,43 +1,3 @@
-// src/lib/discord.ts
-import axios from "axios";
-
-const API_BASE = "https://discord.com/api";
-
-export async function getUserInfo(token: string) {
-  const res = await axios.get(`${API_BASE}/users/@me`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-}
-
-export async function getUserGuilds(token: string) {
-  const res = await axios.get(`${API_BASE}/users/@me/guilds`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return res.data;
-}
-
-export async function getBotGuilds(botToken: string) {
-  const res = await axios.get(`${API_BASE}/users/@me/guilds`, {
-    headers: { Authorization: `Bot ${botToken}` }
-  });
-  return res.data;
-}
-
-export async function getGuildChannels(guildId: string, botToken: string) {
-  const res = await axios.get(`${API_BASE}/guilds/${guildId}/channels`, {
-    headers: { Authorization: `Bot ${botToken}` }
-  });
-  return res.data;
-}
-
-export async function getGuildRoles(guildId: string, botToken: string) {
-  const res = await axios.get(`${API_BASE}/guilds/${guildId}/roles`, {
-    headers: { Authorization: `Bot ${botToken}` }
-  });
-  return res.data;
-}
-
 // src/lib/auth.ts
 import { cookies } from "next/headers";
 
@@ -56,4 +16,30 @@ export function requireAuth(): string {
 export function clearAuth() {
   const cookieStore = cookies();
   cookieStore.delete("discord_token");
+}
+
+// src/lib/db.ts
+import mongoose from "mongoose";
+
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  throw new Error("⚠️ No Mongo URI defined in environment");
+}
+
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+export async function connectDB() {
+  if (cached.conn) return cached.conn;
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI!, {
+      dbName: "rhyxBotDB"
+    }).then((mongoose) => mongoose);
+  }
+  cached.conn = await cached.promise;
+  return cached.conn;
 }
