@@ -7,6 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 
 export default function TicketConfigPage() {
@@ -16,12 +17,32 @@ export default function TicketConfigPage() {
   const [categories, setCategories] = useState<any>([]);
   const [newKey, setNewKey] = useState("");
   const [unsaved, setUnsaved] = useState(false);
+  const [channelOptions, setChannelOptions] = useState([]);
+  const [roleOptions, setRoleOptions] = useState([]);
 
   useEffect(() => {
     if (config?.ticketConfig?.categories) {
       setCategories(Object.entries(config.ticketConfig.categories));
     }
   }, [config]);
+
+  useEffect(() => {
+    if (!serverId) return;
+
+    fetch(`/api/guilds/${serverId}/channels`)
+      .then(res => res.json())
+      .then(data => {
+        const filtered = data.filter((ch: any) => ch.type === 4); // Solo categorías
+        setChannelOptions(filtered.map((ch: any) => ({ id: ch.id, name: ch.name })));
+      });
+
+    fetch(`/api/guilds/${serverId}/roles`)
+      .then(res => res.json())
+      .then(data => {
+        const filtered = data.filter((role: any) => !role.managed && role.name !== "@everyone");
+        setRoleOptions(filtered.map((r: any) => ({ id: r.id, name: r.name })));
+      });
+  }, [serverId]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -102,18 +123,36 @@ export default function TicketConfigPage() {
                   />
                 </div>
                 <div>
-                  <Label>ID de categoría</Label>
-                  <Input
+                  <Label>Canal</Label>
+                  <Select
                     value={cat.ticketCategoryId}
-                    onChange={(e) => handleInputChange(index, "ticketCategoryId", e.target.value)}
-                  />
+                    onValueChange={(val) => handleInputChange(index, "ticketCategoryId", val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar canal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {channelOptions.map((ch) => (
+                        <SelectItem key={ch.id} value={ch.id}>{ch.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label>ID de rol staff</Label>
-                  <Input
+                  <Label>Rol Staff</Label>
+                  <Select
                     value={cat.staffRoleId}
-                    onChange={(e) => handleInputChange(index, "staffRoleId", e.target.value)}
-                  />
+                    onValueChange={(val) => handleInputChange(index, "staffRoleId", val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleOptions.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label>Color del embed</Label>
